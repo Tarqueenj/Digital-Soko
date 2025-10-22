@@ -131,25 +131,56 @@
 
       <!-- Trades Monitor Tab -->
       <div id="trades-tab" class="tab-content p-6 hidden">
-        <h3 class="text-xl font-bold mb-4">Trade Requests</h3>
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold">Trade Requests Monitor</h3>
+          <div class="flex gap-2">
+            <span class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+              ⚠️ <span id="flaggedTradesCount">0</span> Flagged
+            </span>
+            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-sm font-semibold">
+              ⏳ <span id="pendingTradesCount">0</span> Pending
+            </span>
+          </div>
+        </div>
+        
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
+          <p class="text-sm text-yellow-800">
+            <strong>⚠️ Overcharging Detection:</strong> Trades with >30% price difference are automatically flagged (highlighted in red) and require admin review before approval.
+          </p>
+        </div>
         
         <div class="overflow-x-auto">
-          <table class="w-full border-collapse">
+          <table class="w-full border-collapse text-sm">
             <thead>
               <tr class="bg-gray-100">
-                <th class="border p-3 text-left">Trade ID</th>
-                <th class="border p-3 text-left">Requested Item</th>
-                <th class="border p-3 text-left">Offered Item</th>
-                <th class="border p-3 text-left">Status</th>
-                <th class="border p-3 text-left">Actions</th>
+                <th class="border p-2 text-left">ID</th>
+                <th class="border p-2 text-left">Requested Item</th>
+                <th class="border p-2 text-left">Offered</th>
+                <th class="border p-2 text-left">Type</th>
+                <th class="border p-2 text-center">Value Diff</th>
+                <th class="border p-2 text-center">Fairness</th>
+                <th class="border p-2 text-left">Status</th>
+                <th class="border p-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody id="tradesTableBody">
               <tr>
-                <td colspan="5" class="text-center py-8 text-gray-500">Loading trades...</td>
+                <td colspan="8" class="text-center py-8 text-gray-500">Loading trades...</td>
               </tr>
             </tbody>
           </table>
+        </div>
+        
+        <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+          <h4 class="font-semibold mb-2">Legend:</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            <div><span class="text-green-600 font-bold">Green (+)</span> = Buyer offering more value</div>
+            <div><span class="text-red-600 font-bold">Red (-)</span> = Buyer offering less value</div>
+            <div><span class="text-green-600 font-bold">70-100%</span> = Fair trade</div>
+            <div><span class="text-yellow-600 font-bold">50-69%</span> = Questionable trade</div>
+            <div><span class="text-red-600 font-bold">&lt;50%</span> = Unfair trade</div>
+            <div><span class="bg-red-50 px-2 py-1 rounded">Red Background</span> = Needs review</div>
+          </div>
         </div>
       </div>
 

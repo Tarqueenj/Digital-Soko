@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Marketplace Loading</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">🧪 Marketplace Loading Test</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">Backend Status</h2>
+      <div id="backendStatus" class="text-gray-600">Checking...</div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">Products from API</h2>
+      <button onclick="loadProducts()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mb-4">
+        Load Products
+      </button>
+      <div id="productsResult"></div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">Console Logs</h2>
+      <div id="consoleLogs" class="bg-gray-50 p-4 rounded text-xs font-mono max-h-60 overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // Capture console logs
+    const consoleDiv = document.getElementById('consoleLogs');
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    function addLog(type, ...args) {
+      const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : a).join(' ');
+      const color = type === 'error' ? 'text-red-600' : type === 'warn' ? 'text-yellow-600' : 'text-gray-800';
+      consoleDiv.innerHTML += `<div class="${color}">[${type.toUpperCase()}] ${msg}</div>`;
+      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      addLog('log', ...args);
+    };
+
+    console.error = function(...args) {
+      originalError.apply(console, args);
+      addLog('error', ...args);
+    };
+
+    console.warn = function(...args) {
+      originalWarn.apply(console, args);
+      addLog('warn', ...args);
+    };
+
+    // Test backend connection
+    async function testBackend() {
+      const statusDiv = document.getElementById('backendStatus');
+      console.log('Testing backend connection...');
+      
+      try {
+        const response = await fetch('http://localhost:5000/health');
+        const data = await response.json();
+        
+        if (data.success) {
+          statusDiv.innerHTML = `
+            <div class="text-green-600 font-semibold">✅ Backend Connected</div>
+            <div class="text-sm text-gray-600 mt-2">Server: ${data.message}</div>
+          `;
+          console.log('Backend is online:', data);
+        }
+      } catch (error) {
+        statusDiv.innerHTML = `
+          <div class="text-red-600 font-semibold">❌ Backend Not Available</div>
+          <div class="text-sm text-gray-600 mt-2">Error: ${error.message}</div>
+          <div class="text-xs text-gray-500 mt-2">Make sure to run: cd Backend && npm run dev</div>
+        `;
+        console.error('Backend connection failed:', error);
+      }
+    }
+
+    // Load products
+    async function loadProducts() {
+      const resultDiv = document.getElementById('productsResult');
+      resultDiv.innerHTML = '<div class="text-blue-600">⏳ Loading products...</div>';
+      console.log('Loading products from API...');
+      
+      try {
+        console.log('Calling productsAPI.getAll()...');
+        const response = await productsAPI.getAll();
+        console.log('API Response:', response);
+        
+        if (response && response.data) {
+          // Handle nested products array
+          const products = response.data.products || response.data;
+          console.log(`Found ${products.length} products`);
+          
+          resultDiv.innerHTML = `
+            <div class="text-green-600 font-semibold mb-3">✅ Loaded ${products.length} products</div>
+            <div class="space-y-2 max-h-96 overflow-y-auto">
+              ${products.map(p => `
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded border">
+                  <img src="${p.images?.[0]?.url || 'https://via.placeholder.com/50'}" 
+                       class="w-16 h-16 object-cover rounded">
+                  <div class="flex-1">
+                    <div class="font-semibold">${p.name}</div>
+                    <div class="text-sm text-gray-600">
+                      Ksh ${p.price?.toLocaleString()} • ${p.condition} • ${p.category}
+                    </div>
+                    <div class="text-xs text-blue-600">${p.tradeType}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else {
+          throw new Error('No data in response');
+        }
+      } catch (error) {
+        console.error('Failed to load products:', error);
+        resultDiv.innerHTML = `
+          <div class="text-red-600 font-semibold">❌ Failed to load products</div>
+          <div class="text-sm text-gray-600 mt-2">Error: ${error.message}</div>
+        `;
+      }
+    }
+
+    // Run tests on load
+    testBackend();
+    console.log('Page loaded. API client available:', typeof window.productsAPI !== 'undefined');
+  </script>
+</body>
+</html>

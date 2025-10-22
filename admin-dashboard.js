@@ -26,11 +26,25 @@ function updateStatistics() {
   const activeTrades = allTrades.filter(t => t.status === "Pending").length;
   const pendingRequests = allTrades.filter(t => t.status === "Pending").length;
   const totalValue = allItems.reduce((sum, item) => sum + (item.price || 0), 0);
+  
+  // Count flagged trades (trades with >30% price difference)
+  const flaggedTrades = allTrades.filter(t => {
+    const requestedPrice = t.requestedItem?.price || t.requestingValue || 0;
+    const offeredValue = t.offeringValue || 0;
+    const diffPercentage = requestedPrice > 0 ? Math.abs(((offeredValue - requestedPrice) / requestedPrice) * 100) : 0;
+    return t.needsReview || diffPercentage > 30;
+  }).length;
 
   document.getElementById("totalItems").textContent = totalItems;
   document.getElementById("activeTrades").textContent = activeTrades;
   document.getElementById("pendingRequests").textContent = pendingRequests;
   document.getElementById("totalValue").textContent = `Ksh ${totalValue.toLocaleString()}`;
+  
+  // Update trade monitor counters
+  const flaggedCountEl = document.getElementById("flaggedTradesCount");
+  const pendingCountEl = document.getElementById("pendingTradesCount");
+  if (flaggedCountEl) flaggedCountEl.textContent = flaggedTrades;
+  if (pendingCountEl) pendingCountEl.textContent = pendingRequests;
 }
 
 // Render items table
@@ -82,14 +96,14 @@ function renderItemsTable() {
   `).join('');
 }
 
-// Render trades table
+// Render trades table with enhanced details
 function renderTradesTable() {
   const tbody = document.getElementById("tradesTableBody");
   
   if (allTrades.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" class="text-center py-8 text-gray-500">No trades found</td>
+        <td colspan="8" class="text-center py-8 text-gray-500">No trades found</td>
       </tr>
     `;
     return;
@@ -97,15 +111,60 @@ function renderTradesTable() {
 
   tbody.innerHTML = allTrades.map(trade => {
     const requestedItemName = trade.requestedItem?.name || 'Unknown Item';
-    const offeredItemName = typeof trade.offeredItem === 'string' 
-      ? trade.offeredItem 
-      : trade.offeredItem?.name || 'Unknown Item';
+    const requestedPrice = trade.requestedItem?.price || trade.requestingValue || 0;
+    
+    let offeredDescription = '';
+    let offeredValue = trade.offeringValue || 0;
+    
+    if (trade.tradeType === 'BarterOnly' && trade.offeredItem) {
+      offeredDescription = `${trade.offeredItem.name} (Ksh ${trade.offeredItem.price.toLocaleString()})`;
+      offeredValue = trade.offeredItem.price;
+    } else if (trade.tradeType === 'MoneyOnly') {
+      offeredDescription = `Cash: Ksh ${trade.moneyAmount.toLocaleString()}`;
+      offeredValue = trade.moneyAmount;
+    } else if (trade.tradeType === 'BarterPlusMoney' && trade.offeredItem) {
+      offeredDescription = `${trade.offeredItem.name} + Ksh ${trade.moneyAmount.toLocaleString()}`;
+      offeredValue = trade.offeredItem.price + trade.moneyAmount;
+    } else {
+      // Fallback for old format
+      offeredDescription = typeof trade.offeredItem === 'string' 
+        ? trade.offeredItem 
+        : trade.offeredItem?.name || 'Unknown';
+    }
+    
+    const valueDiff = trade.valueDifference || (offeredValue - requestedPrice);
+    const diffPercentage = requestedPrice > 0 ? Math.abs((valueDiff / requestedPrice) * 100) : 0;
+    const fairnessScore = trade.fairnessScore || Math.max(0, 100 - diffPercentage).toFixed(1);
+    const needsReview = trade.needsReview || diffPercentage > 30;
     
     return `
-      <tr class="hover:bg-gray-50">
+      <tr class="hover:bg-gray-50 ${needsReview ? 'bg-red-50' : ''}">
         <td class="border p-3">#${trade.id}</td>
-        <td class="border p-3 font-semibold">${requestedItemName}</td>
-        <td class="border p-3">${offeredItemName}</td>
+        <td class="border p-3">
+          <div class="font-semibold">${requestedItemName}</div>
+          <div class="text-xs text-gray-600">Ksh ${requestedPrice.toLocaleString()}</div>
+        </td>
+        <td class="border p-3">
+          <div class="text-sm">${offeredDescription}</div>
+          <div class="text-xs text-gray-600">Total: Ksh ${offeredValue.toLocaleString()}</div>
+        </td>
+        <td class="border p-3">
+          <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+            ${trade.tradeType || 'N/A'}
+          </span>
+        </td>
+        <td class="border p-3 text-center">
+          <div class="font-semibold ${valueDiff >= 0 ? 'text-green-600' : 'text-red-600'}">
+            ${valueDiff >= 0 ? '+' : ''}Ksh ${Math.abs(valueDiff).toLocaleString()}
+          </div>
+          <div class="text-xs text-gray-500">${diffPercentage.toFixed(1)}%</div>
+        </td>
+        <td class="border p-3 text-center">
+          <div class="font-bold ${fairnessScore >= 70 ? 'text-green-600' : fairnessScore >= 50 ? 'text-yellow-600' : 'text-red-600'}">
+            ${fairnessScore}%
+          </div>
+          ${needsReview ? '<div class="text-xs text-red-600 font-semibold">⚠️ Review</div>' : ''}
+        </td>
         <td class="border p-3">
           <span class="px-2 py-1 rounded text-xs ${
             trade.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -117,6 +176,9 @@ function renderTradesTable() {
         </td>
         <td class="border p-3">
           <div class="flex gap-2">
+            <button onclick="viewTradeDetails(${trade.id})" class="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
+              👁️ View
+            </button>
             ${trade.status === 'Pending' ? `
               <button onclick="approveTrade(${trade.id})" class="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">
                 ✓ Approve
@@ -334,26 +396,103 @@ function clearAllItems() {
   alert("All items have been deleted!");
 }
 
+// View trade details
+function viewTradeDetails(tradeId) {
+  const trade = allTrades.find(t => t.id === tradeId);
+  if (!trade) {
+    alert("Trade not found!");
+    return;
+  }
+
+  const requestedItemName = trade.requestedItem?.name || 'Unknown';
+  const requestedPrice = trade.requestedItem?.price || trade.requestingValue || 0;
+  
+  let offeredDescription = '';
+  let offeredValue = trade.offeringValue || 0;
+  
+  if (trade.tradeType === 'BarterOnly' && trade.offeredItem) {
+    offeredDescription = `${trade.offeredItem.name}\nValue: Ksh ${trade.offeredItem.price.toLocaleString()}`;
+  } else if (trade.tradeType === 'MoneyOnly') {
+    offeredDescription = `Cash Payment\nAmount: Ksh ${trade.moneyAmount.toLocaleString()}`;
+  } else if (trade.tradeType === 'BarterPlusMoney' && trade.offeredItem) {
+    offeredDescription = `${trade.offeredItem.name} (Ksh ${trade.offeredItem.price.toLocaleString()})\n+ Cash: Ksh ${trade.moneyAmount.toLocaleString()}`;
+  }
+  
+  const valueDiff = trade.valueDifference || (offeredValue - requestedPrice);
+  const diffPercentage = requestedPrice > 0 ? Math.abs((valueDiff / requestedPrice) * 100) : 0;
+  const fairnessScore = trade.fairnessScore || Math.max(0, 100 - diffPercentage).toFixed(1);
+  
+  let details = `📊 TRADE DETAILS\n\n`;
+  details += `Trade ID: #${trade.id}\n`;
+  details += `Status: ${trade.status}\n`;
+  details += `Date: ${new Date(trade.date).toLocaleString()}\n\n`;
+  details += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+  details += `📦 REQUESTED ITEM:\n${requestedItemName}\nValue: Ksh ${requestedPrice.toLocaleString()}\n\n`;
+  details += `💰 OFFERED:\n${offeredDescription}\nTotal Value: Ksh ${offeredValue.toLocaleString()}\n\n`;
+  details += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+  details += `📈 TRADE ANALYSIS:\n`;
+  details += `Value Difference: ${valueDiff >= 0 ? '+' : ''}Ksh ${Math.abs(valueDiff).toLocaleString()}\n`;
+  details += `Difference %: ${diffPercentage.toFixed(1)}%\n`;
+  details += `Fairness Score: ${fairnessScore}%\n`;
+  details += `Trade Type: ${trade.tradeType || 'N/A'}\n\n`;
+  
+  if (trade.needsReview || diffPercentage > 30) {
+    details += `⚠️ WARNING: Large price difference detected!\n`;
+    details += `This trade requires careful review.\n`;
+  } else {
+    details += `✅ Trade appears fair and balanced.\n`;
+  }
+  
+  alert(details);
+}
+
 // Approve trade
 function approveTrade(tradeId) {
   const trade = allTrades.find(t => t.id === tradeId);
   if (!trade) return;
+  
+  // Check if trade needs review
+  const requestedPrice = trade.requestedItem?.price || trade.requestingValue || 0;
+  const offeredValue = trade.offeringValue || 0;
+  const valueDiff = trade.valueDifference || (offeredValue - requestedPrice);
+  const diffPercentage = requestedPrice > 0 ? Math.abs((valueDiff / requestedPrice) * 100) : 0;
+  
+  if (diffPercentage > 30) {
+    const confirm = window.confirm(
+      `⚠️ WARNING: This trade has a ${diffPercentage.toFixed(1)}% price difference!\n\n` +
+      `Offered: Ksh ${offeredValue.toLocaleString()}\n` +
+      `Requested: Ksh ${requestedPrice.toLocaleString()}\n` +
+      `Difference: ${valueDiff >= 0 ? '+' : ''}Ksh ${Math.abs(valueDiff).toLocaleString()}\n\n` +
+      `Are you sure you want to approve this potentially unfair trade?`
+    );
+    
+    if (!confirm) {
+      return;
+    }
+  }
 
   trade.status = "Approved";
+  trade.approvedBy = "Admin";
+  trade.approvedDate = new Date().toISOString();
   localStorage.setItem("trades", JSON.stringify(allTrades));
   loadDashboardData();
-  alert("Trade approved!");
+  alert("✅ Trade approved successfully!");
 }
 
 // Reject trade
 function rejectTrade(tradeId) {
   const trade = allTrades.find(t => t.id === tradeId);
   if (!trade) return;
+  
+  const reason = prompt("Enter rejection reason (optional):");
 
   trade.status = "Rejected";
+  trade.rejectedBy = "Admin";
+  trade.rejectedDate = new Date().toISOString();
+  trade.rejectionReason = reason || "Not specified";
   localStorage.setItem("trades", JSON.stringify(allTrades));
   loadDashboardData();
-  alert("Trade rejected!");
+  alert("❌ Trade rejected!");
 }
 
 // Delete trade
