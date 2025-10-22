@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Image Upload - Digital Soko</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Image Upload Test</h1>
+    
+    <!-- Quick Add Sample Items -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+      <h2 class="text-xl font-bold mb-4">Quick Test: Add Sample Items</h2>
+      <p class="text-gray-600 mb-4">Click the button below to add 3 sample items with placeholder images to test the dashboard.</p>
+      <button onclick="addSampleItems()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        Add Sample Items
+      </button>
+      <button onclick="clearAllItems()" class="ml-3 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700">
+        Clear All Items
+      </button>
+    </div>
+
+    <!-- Image Upload Test -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+      <h2 class="text-xl font-bold mb-4">Test Image Upload</h2>
+      <input type="file" id="testImage" accept="image/*" class="mb-4">
+      <div id="testPreview" class="hidden">
+        <p class="text-sm text-gray-600 mb-2">Preview:</p>
+        <img id="testPreviewImg" class="w-full max-w-md h-64 object-cover rounded-lg border-2 border-gray-300 mb-2">
+        <p id="imageInfo" class="text-sm text-gray-600"></p>
+      </div>
+    </div>
+
+    <!-- Current Items Display -->
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-bold mb-4">Current Items in Storage</h2>
+      <div id="itemsList" class="space-y-3">
+        <!-- Items will be listed here -->
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-6 flex gap-4">
+      <a href="post-item.html" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
+        Go to Post Item Page
+      </a>
+      <a href="dashboard.html" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+        Go to Dashboard
+      </a>
+      <a href="my-items.html" class="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+        Go to My Items
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Test image upload
+    document.getElementById('testImage').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          document.getElementById('testPreviewImg').src = event.target.result;
+          document.getElementById('testPreview').classList.remove('hidden');
+          
+          const sizeKB = (file.size / 1024).toFixed(2);
+          const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+          document.getElementById('imageInfo').innerHTML = `
+            <strong>File:</strong> ${file.name}<br>
+            <strong>Type:</strong> ${file.type}<br>
+            <strong>Size:</strong> ${sizeKB} KB (${sizeMB} MB)<br>
+            <strong>Base64 Length:</strong> ${event.target.result.length} characters
+          `;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Add sample items
+    function addSampleItems() {
+      const sampleItems = [
+        {
+          id: Date.now(),
+          name: "Gaming Laptop",
+          description: "High-performance gaming laptop with RTX graphics",
+          category: "Electronics",
+          condition: "Like New",
+          price: 85000,
+          tradeType: "FullAmount",
+          image: "https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400",
+          datePosted: new Date().toISOString()
+        },
+        {
+          id: Date.now() + 1,
+          name: "iPhone 13 Pro",
+          description: "128GB, excellent condition",
+          category: "Electronics",
+          condition: "Used",
+          price: 65000,
+          tradeType: "TopUp",
+          image: "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400",
+          datePosted: new Date().toISOString()
+        },
+        {
+          id: Date.now() + 2,
+          name: "Mountain Bike",
+          description: "21-speed mountain bike, barely used",
+          category: "Sports",
+          condition: "New",
+          price: 35000,
+          tradeType: "Barter",
+          image: "https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=400",
+          datePosted: new Date().toISOString()
+        }
+      ];
+
+      const existingItems = JSON.parse(localStorage.getItem("myItems")) || [];
+      const allItems = [...existingItems, ...sampleItems];
+      localStorage.setItem("myItems", JSON.stringify(allItems));
+      
+      alert("✅ 3 sample items added! Check dashboard.html to see them.");
+      displayItems();
+    }
+
+    // Clear all items
+    function clearAllItems() {
+      if (confirm("Are you sure you want to delete all items?")) {
+        localStorage.removeItem("myItems");
+        alert("✅ All items cleared!");
+        displayItems();
+      }
+    }
+
+    // Display current items
+    function displayItems() {
+      const items = JSON.parse(localStorage.getItem("myItems")) || [];
+      const container = document.getElementById('itemsList');
+      
+      if (items.length === 0) {
+        container.innerHTML = '<p class="text-gray-500">No items in storage. Add some sample items or post new ones!</p>';
+        return;
+      }
+
+      container.innerHTML = `
+        <p class="text-sm text-gray-600 mb-3">Total items: <strong>${items.length}</strong></p>
+        ${items.map((item, index) => `
+          <div class="border rounded-lg p-4 flex gap-4 items-start">
+            <img src="${item.image || 'https://via.placeholder.com/100'}" 
+                 class="w-24 h-24 object-cover rounded"
+                 onerror="this.src='https://via.placeholder.com/100?text=No+Image'">
+            <div class="flex-1">
+              <h3 class="font-bold">${item.name}</h3>
+              <p class="text-sm text-gray-600">${item.category} • ${item.condition}</p>
+              <p class="text-lg text-blue-600 font-semibold">Ksh ${item.price.toLocaleString()}</p>
+              <p class="text-xs text-gray-500">Posted: ${new Date(item.datePosted).toLocaleDateString()}</p>
+            </div>
+            <button onclick="deleteItem(${item.id})" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">
+              Delete
+            </button>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    // Delete single item
+    function deleteItem(id) {
+      const items = JSON.parse(localStorage.getItem("myItems")) || [];
+      const filtered = items.filter(item => item.id !== id);
+      localStorage.setItem("myItems", JSON.stringify(filtered));
+      displayItems();
+    }
+
+    // Initial display
+    displayItems();
+  </script>
+</body>
+</html>

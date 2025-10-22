@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products - eCommerce</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+    
+    header { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); padding: 15px 0; }
+    .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 24px; font-weight: bold; color: #007bff; }
+    nav { display: flex; gap: 20px; align-items: center; }
+    nav a { text-decoration: none; color: #333; }
+    .cart-badge { background: #dc3545; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+    
+    .search-bar { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+    .search-bar input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+    
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+    .product-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; }
+    .product-card:hover { transform: translateY(-5px); }
+    .product-image { width: 100%; height: 200px; object-fit: cover; background: #f0f0f0; }
+    .product-info { padding: 15px; }
+    .product-name { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #333; }
+    .product-price { font-size: 20px; color: #007bff; margin-bottom: 10px; }
+    .product-rating { color: #ffc107; margin-bottom: 10px; }
+    .btn { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .btn:hover { background: #0056b3; }
+    .loading { text-align: center; padding: 50px; }
+    .error { color: #dc3545; text-align: center; padding: 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="logo">eCommerce</div>
+      <nav>
+        <a href="index.html">Products</a>
+        <a href="#" id="cartLink">Cart <span class="cart-badge" id="cartCount">0</span></a>
+        <span id="userNav"></span>
+      </nav>
+    </div>
+  </header>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search products...">
+  </div>
+
+  <div class="container">
+    <div id="loading" class="loading">Loading products...</div>
+    <div id="error" class="error" style="display: none;"></div>
+    <div id="productsGrid" class="products-grid"></div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script>
+    // Update navigation
+    const userNav = document.getElementById('userNav');
+    if (AuthService.isAuthenticated()) {
+      const user = AuthService.getCurrentUser();
+      userNav.innerHTML = `
+        <span>Hello, ${user.firstName}</span>
+        <a href="#" onclick="AuthService.logout(); return false;">Logout</a>
+      `;
+    } else {
+      userNav.innerHTML = '<a href="login.html">Login</a>';
+    }
+
+    // Update cart count
+    async function updateCartCount() {
+      if (AuthService.isAuthenticated()) {
+        try {
+          const cart = await CartService.getCart();
+          document.getElementById('cartCount').textContent = CartService.getCartCount(cart);
+        } catch (error) {
+          console.error('Failed to load cart count');
+        }
+      }
+    }
+
+    // Load products
+    async function loadProducts(searchQuery = '') {
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      const grid = document.getElementById('productsGrid');
+
+      loading.style.display = 'block';
+      error.style.display = 'none';
+      grid.innerHTML = '';
+
+      try {
+        const params = searchQuery ? { search: searchQuery } : { page: 1, limit: 12 };
+        const data = await ProductService.getProducts(params);
+        const products = data.products;
+
+        loading.style.display = 'none';
+
+        if (products.length === 0) {
+          grid.innerHTML = '<p style="text-align: center; padding: 50px;">No products found</p>';
+          return;
+        }
+
+        products.forEach(product => {
+          const card = document.createElement('div');
+          card.className = 'product-card';
+          card.innerHTML = `
+            <img src="${product.images[0]?.url || 'https://via.placeholder.com/250'}" 
+                 alt="${product.name}" 
+                 class="product-image"
+                 onerror="this.src='https://via.placeholder.com/250?text=No+Image'">
+            <div class="product-info">
+              <div class="product-name">${product.name}</div>
+              <div class="product-price">$${product.price.toFixed(2)}</div>
+              <div class="product-rating">★ ${product.ratings.average.toFixed(1)} (${product.ratings.count})</div>
+              <button class="btn" onclick="addToCart('${product._id}')">Add to Cart</button>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        loading.style.display = 'none';
+        error.style.display = 'block';
+        error.textContent = 'Failed to load products: ' + err.message;
+      }
+    }
+
+    // Add to cart
+    async function addToCart(productId) {
+      if (!AuthService.isAuthenticated()) {
+        alert('Please login to add items to cart');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        await CartService.addToCart(productId, 1);
+        alert('Product added to cart!');
+        updateCartCount();
+      } catch (error) {
+        alert('Failed to add to cart: ' + error.message);
+      }
+    }
+
+    // Search
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        loadProducts(e.target.value);
+      }, 500);
+    });
+
+    // Initial load
+    loadProducts();
+    updateCartCount();
+  </script>
+</body>
+</html>

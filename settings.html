@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings - Digital Soko</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <header class="bg-blue-700 text-white">
+    <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+      <div class="text-2xl font-bold">Digital Soko</div>
+
+      <!-- Menu -->
+      <div class="relative">
+        <button id="menuBtn" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 flex items-center gap-2">☰ Menu</button>
+        <div id="menuDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white text-gray-800 rounded shadow-lg z-50">
+          <a href="dashboard.html" class="block px-4 py-2 hover:bg-gray-100">🏠 Dashboard</a>
+          <a href="my-items.html" class="block px-4 py-2 hover:bg-gray-100">📦 My Items</a>
+          <a href="post-item.html" class="block px-4 py-2 hover:bg-gray-100">➕ Post Item</a>
+          <a href="marketplace.html" class="block px-4 py-2 hover:bg-gray-100">🛒 Marketplace</a>
+          <a href="barter-requests.html" class="block px-4 py-2 hover:bg-gray-100">🔄 Barter Requests</a>
+          <a href="messages.html" class="block px-4 py-2 hover:bg-gray-100">💬 Messages</a>
+          <a href="settings.html" class="block px-4 py-2 hover:bg-gray-100 font-bold">⚙ Settings</a>
+          <a href="admin-dashboard.html" class="block px-4 py-2 hover:bg-gray-100 bg-purple-50 text-purple-700 font-semibold">🛡️ Admin Panel</a>
+          <a href="login.html" class="block px-4 py-2 hover:bg-gray-100 text-red-600">🚪 Logout</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow p-8 bg-gray-50">
+    <h2 class="text-3xl font-bold mb-6">Settings</h2>
+
+    <div class="max-w-4xl mx-auto space-y-6">
+      
+      <!-- Profile Settings -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-xl font-bold mb-4 flex items-center">
+          <i data-lucide="user" class="w-5 h-5 mr-2"></i>
+          Profile Settings
+        </h3>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Full Name</label>
+            <input type="text" id="fullName" class="w-full border px-3 py-2 rounded" placeholder="Enter your full name">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Email</label>
+            <input type="email" id="email" class="w-full border px-3 py-2 rounded" placeholder="your.email@example.com">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Phone Number</label>
+            <input type="tel" id="phone" class="w-full border px-3 py-2 rounded" placeholder="+254 700 000 000">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Location</label>
+            <input type="text" id="location" class="w-full border px-3 py-2 rounded" placeholder="City, Country">
+          </div>
+          <button onclick="saveProfile()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Save Profile
+          </button>
+        </div>
+      </div>
+
+      <!-- Account Security -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-xl font-bold mb-4 flex items-center">
+          <i data-lucide="lock" class="w-5 h-5 mr-2"></i>
+          Account Security
+        </h3>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Current Password</label>
+            <input type="password" id="currentPassword" class="w-full border px-3 py-2 rounded" placeholder="Enter current password">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">New Password</label>
+            <input type="password" id="newPassword" class="w-full border px-3 py-2 rounded" placeholder="Enter new password">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Confirm New Password</label>
+            <input type="password" id="confirmPassword" class="w-full border px-3 py-2 rounded" placeholder="Confirm new password">
+          </div>
+          <button onclick="changePassword()" class="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+            Change Password
+          </button>
+        </div>
+      </div>
+
+      <!-- Notification Settings -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-xl font-bold mb-4 flex items-center">
+          <i data-lucide="bell" class="w-5 h-5 mr-2"></i>
+          Notification Preferences
+        </h3>
+        <div class="space-y-3">
+          <label class="flex items-center">
+            <input type="checkbox" id="emailNotif" checked class="w-4 h-4 text-blue-600 rounded">
+            <span class="ml-3">Email notifications for new trade requests</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" id="smsNotif" class="w-4 h-4 text-blue-600 rounded">
+            <span class="ml-3">SMS notifications for accepted trades</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" id="pushNotif" checked class="w-4 h-4 text-blue-600 rounded">
+            <span class="ml-3">Push notifications for messages</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" id="marketingNotif" class="w-4 h-4 text-blue-600 rounded">
+            <span class="ml-3">Marketing and promotional emails</span>
+          </label>
+          <button onclick="saveNotifications()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mt-4">
+            Save Preferences
+          </button>
+        </div>
+      </div>
+
+      <!-- Privacy Settings -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-xl font-bold mb-4 flex items-center">
+          <i data-lucide="shield" class="w-5 h-5 mr-2"></i>
+          Privacy Settings
+        </h3>
+        <div class="space-y-3">
+          <label class="flex items-center">
+            <input type="checkbox" id="profilePublic" checked class="w-4 h-4 text-blue-600 rounded">
+            <span class="ml-3">Make my profile public</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" id="showEmail" class="w-4 h-4 text-blue-600 rounded">
+            <span class="ml-3">Show my email to other users</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" id="showPhone" class="w-4 h-4 text-blue-600 rounded">
+            <span class="ml-3">Show my phone number to other users</span>
+          </label>
+          <button onclick="savePrivacy()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mt-4">
+            Save Privacy Settings
+          </button>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="bg-white rounded-xl shadow p-6 border-2 border-red-200">
+        <h3 class="text-xl font-bold mb-4 flex items-center text-red-600">
+          <i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i>
+          Danger Zone
+        </h3>
+        <div class="space-y-3">
+          <p class="text-gray-600">Once you delete your account, there is no going back. Please be certain.</p>
+          <button onclick="deleteAccount()" class="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+            Delete My Account
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Success Modal -->
+  <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-11/12 max-w-md text-center">
+      <div class="mb-6">
+        <div class="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+          <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+      </div>
+      <h3 class="text-2xl font-bold text-gray-800 mb-2">Success!</h3>
+      <p id="successMessage" class="text-gray-600 mb-6">Settings saved successfully</p>
+      <button onclick="closeSuccessModal()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">
+        OK
+      </button>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    
+    // Navbar dropdown toggle
+    document.addEventListener("DOMContentLoaded", () => {
+      const btn = document.getElementById("menuBtn");
+      const dropdown = document.getElementById("menuDropdown");
+      btn.addEventListener("click", () => dropdown.classList.toggle("hidden"));
+      document.addEventListener("click", (e) => {
+        if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.add("hidden");
+        }
+      });
+
+      // Load saved settings
+      loadSettings();
+    });
+
+    function loadSettings() {
+      const settings = JSON.parse(localStorage.getItem("userSettings") || "{}");
+      if (settings.fullName) document.getElementById("fullName").value = settings.fullName;
+      if (settings.email) document.getElementById("email").value = settings.email;
+      if (settings.phone) document.getElementById("phone").value = settings.phone;
+      if (settings.location) document.getElementById("location").value = settings.location;
+    }
+
+    function saveProfile() {
+      const settings = {
+        fullName: document.getElementById("fullName").value,
+        email: document.getElementById("email").value,
+        phone: document.getElementById("phone").value,
+        location: document.getElementById("location").value
+      };
+      localStorage.setItem("userSettings", JSON.stringify(settings));
+      showSuccess("Profile updated successfully!");
+    }
+
+    function changePassword() {
+      const current = document.getElementById("currentPassword").value;
+      const newPass = document.getElementById("newPassword").value;
+      const confirm = document.getElementById("confirmPassword").value;
+
+      if (!current || !newPass || !confirm) {
+        alert("Please fill in all password fields");
+        return;
+      }
+
+      if (newPass !== confirm) {
+        alert("New passwords do not match");
+        return;
+      }
+
+      if (newPass.length < 6) {
+        alert("Password must be at least 6 characters");
+        return;
+      }
+
+      // In production, this would be sent to a server
+      showSuccess("Password changed successfully!");
+      document.getElementById("currentPassword").value = "";
+      document.getElementById("newPassword").value = "";
+      document.getElementById("confirmPassword").value = "";
+    }
+
+    function saveNotifications() {
+      const notifSettings = {
+        email: document.getElementById("emailNotif").checked,
+        sms: document.getElementById("smsNotif").checked,
+        push: document.getElementById("pushNotif").checked,
+        marketing: document.getElementById("marketingNotif").checked
+      };
+      localStorage.setItem("notificationSettings", JSON.stringify(notifSettings));
+      showSuccess("Notification preferences saved!");
+    }
+
+    function savePrivacy() {
+      const privacySettings = {
+        profilePublic: document.getElementById("profilePublic").checked,
+        showEmail: document.getElementById("showEmail").checked,
+        showPhone: document.getElementById("showPhone").checked
+      };
+      localStorage.setItem("privacySettings", JSON.stringify(privacySettings));
+      showSuccess("Privacy settings saved!");
+    }
+
+    function deleteAccount() {
+      const confirmation = prompt("Type 'DELETE' to confirm account deletion:");
+      if (confirmation === "DELETE") {
+        localStorage.clear();
+        alert("Account deleted. You will be redirected to the login page.");
+        window.location.href = "login.html";
+      }
+    }
+
+    function showSuccess(message) {
+      document.getElementById("successMessage").textContent = message;
+      document.getElementById("successModal").classList.remove("hidden");
+    }
+
+    function closeSuccessModal() {
+      document.getElementById("successModal").classList.add("hidden");
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Messages - Digital Soko</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <header class="bg-blue-700 text-white">
+    <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+      <div class="text-2xl font-bold">Digital Soko</div>
+
+      <!-- Menu -->
+      <div class="relative">
+        <button id="menuBtn" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 flex items-center gap-2">☰ Menu</button>
+        <div id="menuDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white text-gray-800 rounded shadow-lg z-50">
+          <a href="dashboard.html" class="block px-4 py-2 hover:bg-gray-100">🏠 Dashboard</a>
+          <a href="my-items.html" class="block px-4 py-2 hover:bg-gray-100">📦 My Items</a>
+          <a href="post-item.html" class="block px-4 py-2 hover:bg-gray-100">➕ Post Item</a>
+          <a href="marketplace.html" class="block px-4 py-2 hover:bg-gray-100">🛒 Marketplace</a>
+          <a href="barter-requests.html" class="block px-4 py-2 hover:bg-gray-100">🔄 Barter Requests</a>
+          <a href="messages.html" class="block px-4 py-2 hover:bg-gray-100 font-bold">💬 Messages</a>
+          <a href="settings.html" class="block px-4 py-2 hover:bg-gray-100">⚙ Settings</a>
+          <a href="admin-dashboard.html" class="block px-4 py-2 hover:bg-gray-100 bg-purple-50 text-purple-700 font-semibold">🛡️ Admin Panel</a>
+          <a href="login.html" class="block px-4 py-2 hover:bg-gray-100 text-red-600">🚪 Logout</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow p-8 bg-gray-50">
+    <h2 class="text-3xl font-bold mb-6">Messages</h2>
+
+    <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+      
+      <!-- Conversations List -->
+      <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="bg-blue-600 text-white p-4">
+          <h3 class="font-bold text-lg">Conversations</h3>
+        </div>
+        <div id="conversationsList" class="overflow-y-auto h-full">
+          <!-- Conversations will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Chat Area -->
+      <div class="md:col-span-2 bg-white rounded-xl shadow flex flex-col">
+        <div id="chatHeader" class="bg-blue-600 text-white p-4 rounded-t-xl">
+          <h3 class="font-bold text-lg">Select a conversation</h3>
+        </div>
+        
+        <div id="chatMessages" class="flex-grow overflow-y-auto p-4 space-y-4">
+          <div class="text-center text-gray-500 py-12">
+            <i data-lucide="message-circle" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+            <p>Select a conversation to start messaging</p>
+          </div>
+        </div>
+
+        <div id="chatInput" class="p-4 border-t hidden">
+          <div class="flex gap-2">
+            <input 
+              type="text" 
+              id="messageInput" 
+              placeholder="Type your message..." 
+              class="flex-grow border px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              onkeypress="if(event.key === 'Enter') sendMessage()"
+            >
+            <button onclick="sendMessage()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    lucide.createIcons();
+    
+    // Sample conversations data
+    let conversations = [
+      {
+        id: 1,
+        name: "John Doe",
+        lastMessage: "Is the laptop still available?",
+        time: "2 min ago",
+        unread: 2,
+        avatar: "👤"
+      },
+      {
+        id: 2,
+        name: "Jane Smith",
+        lastMessage: "Thanks for the trade!",
+        time: "1 hour ago",
+        unread: 0,
+        avatar: "👩"
+      },
+      {
+        id: 3,
+        name: "Mike Johnson",
+        lastMessage: "Can we meet tomorrow?",
+        time: "3 hours ago",
+        unread: 1,
+        avatar: "👨"
+      }
+    ];
+
+    let currentConversation = null;
+    let messages = {
+      1: [
+        { sender: "them", text: "Hi! Is the laptop still available?", time: "10:30 AM" },
+        { sender: "me", text: "Yes, it's still available!", time: "10:32 AM" },
+        { sender: "them", text: "Great! What's your best price?", time: "10:35 AM" }
+      ],
+      2: [
+        { sender: "them", text: "I'm interested in your phone", time: "Yesterday" },
+        { sender: "me", text: "Sure! Would you like to trade?", time: "Yesterday" },
+        { sender: "them", text: "Thanks for the trade!", time: "1 hour ago" }
+      ],
+      3: [
+        { sender: "them", text: "Can we meet tomorrow?", time: "3 hours ago" }
+      ]
+    };
+
+    // Navbar dropdown toggle
+    document.addEventListener("DOMContentLoaded", () => {
+      const btn = document.getElementById("menuBtn");
+      const dropdown = document.getElementById("menuDropdown");
+      btn.addEventListener("click", () => dropdown.classList.toggle("hidden"));
+      document.addEventListener("click", (e) => {
+        if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.add("hidden");
+        }
+      });
+
+      loadConversations();
+    });
+
+    function loadConversations() {
+      const list = document.getElementById("conversationsList");
+      list.innerHTML = conversations.map(conv => `
+        <div onclick="openConversation(${conv.id})" class="p-4 border-b hover:bg-gray-50 cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="text-3xl">${conv.avatar}</div>
+            <div class="flex-grow">
+              <div class="flex justify-between items-start">
+                <h4 class="font-semibold">${conv.name}</h4>
+                <span class="text-xs text-gray-500">${conv.time}</span>
+              </div>
+              <p class="text-sm text-gray-600 truncate">${conv.lastMessage}</p>
+            </div>
+            ${conv.unread > 0 ? `<span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">${conv.unread}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openConversation(id) {
+      currentConversation = id;
+      const conv = conversations.find(c => c.id === id);
+      
+      // Update header
+      document.getElementById("chatHeader").innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">${conv.avatar}</span>
+          <h3 class="font-bold text-lg">${conv.name}</h3>
+        </div>
+      `;
+
+      // Show chat input
+      document.getElementById("chatInput").classList.remove("hidden");
+
+      // Load messages
+      loadMessages(id);
+
+      // Mark as read
+      conv.unread = 0;
+      loadConversations();
+    }
+
+    function loadMessages(conversationId) {
+      const chatMessages = document.getElementById("chatMessages");
+      const msgs = messages[conversationId] || [];
+      
+      chatMessages.innerHTML = msgs.map(msg => {
+        if (msg.sender === "me") {
+          return `
+            <div class="flex justify-end">
+              <div class="bg-blue-600 text-white px-4 py-2 rounded-lg max-w-xs">
+                <p>${msg.text}</p>
+                <span class="text-xs opacity-75">${msg.time}</span>
+              </div>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="flex justify-start">
+              <div class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg max-w-xs">
+                <p>${msg.text}</p>
+                <span class="text-xs opacity-75">${msg.time}</span>
+              </div>
+            </div>
+          `;
+        }
+      }).join('');
+
+      // Scroll to bottom
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+      
+      if (!text || !currentConversation) return;
+
+      // Add message
+      if (!messages[currentConversation]) {
+        messages[currentConversation] = [];
+      }
+      
+      messages[currentConversation].push({
+        sender: "me",
+        text: text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+
+      // Update conversation
+      const conv = conversations.find(c => c.id === currentConversation);
+      conv.lastMessage = text;
+      conv.time = "Just now";
+
+      // Reload
+      loadMessages(currentConversation);
+      loadConversations();
+      
+      // Clear input
+      input.value = "";
+    }
+  </script>
+</body>
+</html>
