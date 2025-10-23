@@ -64,13 +64,13 @@
         </div>
       </div>
 
-      <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl shadow-lg">
+      <div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-xl shadow-lg">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm opacity-90">Total Value</p>
-            <h3 id="totalValue" class="text-3xl font-bold mt-1">Ksh 0</h3>
+            <p class="text-sm opacity-90">Pending Reports</p>
+            <h3 id="pendingReports" class="text-3xl font-bold mt-1">0</h3>
           </div>
-          <i data-lucide="dollar-sign" class="w-12 h-12 opacity-80"></i>
+          <i data-lucide="flag" class="w-12 h-12 opacity-80"></i>
         </div>
       </div>
     </div>
@@ -83,6 +83,9 @@
         </button>
         <button class="tab-btn px-6 py-3 font-semibold text-gray-600 hover:text-purple-600" data-tab="trades">
           🔄 Trades Monitor
+        </button>
+        <button class="tab-btn px-6 py-3 font-semibold text-gray-600 hover:text-purple-600" data-tab="reports">
+          🚩 Reports
         </button>
         <button class="tab-btn px-6 py-3 font-semibold text-gray-600 hover:text-purple-600" data-tab="analytics">
           📊 Analytics
@@ -131,22 +134,136 @@
 
       <!-- Trades Monitor Tab -->
       <div id="trades-tab" class="tab-content p-6 hidden">
-        <h3 class="text-xl font-bold mb-4">Trade Requests</h3>
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold">Trade Requests Monitor</h3>
+          <div class="flex gap-2">
+            <span class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+              ⚠️ <span id="flaggedTradesCount">0</span> Flagged
+            </span>
+            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-sm font-semibold">
+              ⏳ <span id="pendingTradesCount">0</span> Pending
+            </span>
+          </div>
+        </div>
+        
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
+          <p class="text-sm text-yellow-800">
+            <strong>⚠️ Overcharging Detection:</strong> Trades with >30% price difference are automatically flagged (highlighted in red) and require admin review before approval.
+          </p>
+        </div>
         
         <div class="overflow-x-auto">
-          <table class="w-full border-collapse">
+          <table class="w-full border-collapse text-sm">
             <thead>
               <tr class="bg-gray-100">
-                <th class="border p-3 text-left">Trade ID</th>
-                <th class="border p-3 text-left">Requested Item</th>
-                <th class="border p-3 text-left">Offered Item</th>
-                <th class="border p-3 text-left">Status</th>
-                <th class="border p-3 text-left">Actions</th>
+                <th class="border p-2 text-left">ID</th>
+                <th class="border p-2 text-left">Requested Item</th>
+                <th class="border p-2 text-left">Offered</th>
+                <th class="border p-2 text-left">Type</th>
+                <th class="border p-2 text-center">Value Diff</th>
+                <th class="border p-2 text-center">Fairness</th>
+                <th class="border p-2 text-left">Status</th>
+                <th class="border p-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody id="tradesTableBody">
               <tr>
-                <td colspan="5" class="text-center py-8 text-gray-500">Loading trades...</td>
+                <td colspan="8" class="text-center py-8 text-gray-500">Loading trades...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+          <h4 class="font-semibold mb-2">Legend:</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            <div><span class="text-green-600 font-bold">Green (+)</span> = Buyer offering more value</div>
+            <div><span class="text-red-600 font-bold">Red (-)</span> = Buyer offering less value</div>
+            <div><span class="text-green-600 font-bold">70-100%</span> = Fair trade</div>
+            <div><span class="text-yellow-600 font-bold">50-69%</span> = Questionable trade</div>
+            <div><span class="text-red-600 font-bold">&lt;50%</span> = Unfair trade</div>
+            <div><span class="bg-red-50 px-2 py-1 rounded">Red Background</span> = Needs review</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reports Tab -->
+      <div id="reports-tab" class="tab-content p-6 hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold">Item Reports Management</h3>
+          <div class="flex gap-2">
+            <span class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+              🚩 <span id="totalReports">0</span> Total
+            </span>
+            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-sm font-semibold">
+              ⏳ <span id="pendingReportsTab">0</span> Pending
+            </span>
+            <span class="px-3 py-1 bg-green-100 text-green-800 rounded text-sm font-semibold">
+              ✅ <span id="resolvedReports">0</span> Resolved
+            </span>
+          </div>
+        </div>
+
+        <!-- Reports Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-red-800 font-semibold">💰 Overpriced</p>
+                <p class="text-2xl font-bold text-red-600" id="overpricedCount">0</p>
+              </div>
+              <div class="text-red-500">📈</div>
+            </div>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-blue-800 font-semibold">📉 Underpriced</p>
+                <p class="text-2xl font-bold text-blue-600" id="underpricedCount">0</p>
+              </div>
+              <div class="text-blue-500">📉</div>
+            </div>
+          </div>
+
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-yellow-800 font-semibold">⚠️ Misleading</p>
+                <p class="text-2xl font-bold text-yellow-600" id="misleadingCount">0</p>
+              </div>
+              <div class="text-yellow-500">⚠️</div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-800 font-semibold">❓ Other</p>
+                <p class="text-2xl font-bold text-gray-600" id="otherCount">0</p>
+              </div>
+              <div class="text-gray-500">❓</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reports Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="border p-3 text-left">Date</th>
+                <th class="border p-3 text-left">Item</th>
+                <th class="border p-3 text-left">Price</th>
+                <th class="border p-3 text-left">Reason</th>
+                <th class="border p-3 text-left">Reporter</th>
+                <th class="border p-3 text-center">Status</th>
+                <th class="border p-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reportsTableBody">
+              <tr>
+                <td colspan="7" class="text-center py-8 text-gray-500">Loading reports...</td>
               </tr>
             </tbody>
           </table>
@@ -249,12 +366,17 @@
     </div>
   </div>
 
-  <script src="admin-dashboard.js"></script>
+  <script src="js/api.js"></script>
+  <script src="admin-dashboard.js?v=4"></script>
   <script>
+    // Initialize Lucide icons
     lucide.createIcons();
     
     // Navbar dropdown toggle
     document.addEventListener("DOMContentLoaded", () => {
+      console.log('Admin Dashboard initializing...');
+      
+      // Setup menu dropdown
       const btn = document.getElementById("menuBtn");
       const dropdown = document.getElementById("menuDropdown");
       btn.addEventListener("click", () => dropdown.classList.toggle("hidden"));
@@ -263,6 +385,25 @@
           dropdown.classList.add("hidden");
         }
       });
+      
+      // Check if API is loaded
+      if (typeof window.productsAPI !== 'undefined') {
+        console.log('✅ Products API loaded');
+      } else {
+        console.warn('⚠️ Products API not loaded');
+      }
+      
+      if (typeof window.tradesAPI !== 'undefined') {
+        console.log('✅ Trades API loaded');
+      } else {
+        console.warn('⚠️ Trades API not loaded');
+      }
+      
+      if (typeof window.reportsAPI !== 'undefined') {
+        console.log('✅ Reports API loaded');
+      } else {
+        console.warn('⚠️ Reports API not loaded');
+      }
     });
   </script>
 </body>

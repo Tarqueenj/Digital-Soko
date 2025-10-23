@@ -35,8 +35,19 @@ const productSchema = new mongoose.Schema(
         'Beauty',
         'Automotive',
         'Food',
+        'Furniture',
         'Other',
       ],
+    },
+    condition: {
+      type: String,
+      enum: ['New', 'Like New', 'Used', 'Fair'],
+      default: 'New',
+    },
+    tradeType: {
+      type: String,
+      enum: ['FullAmount', 'TopUp', 'Barter'],
+      default: 'FullAmount',
     },
     subcategory: {
       type: String,

@@ -18,6 +18,8 @@ const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
+const tradeRoutes = require('./routes/tradeRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 // Initialize express app
 const app = express();
@@ -82,6 +84,8 @@ app.use(`/api/${API_VERSION}/orders`, orderRoutes);
 app.use(`/api/${API_VERSION}/products/:productId/reviews`, reviewRoutes);
 app.use(`/api/${API_VERSION}/reviews`, reviewRoutes);
 app.use(`/api/${API_VERSION}/wishlist`, wishlistRoutes);
+app.use(`/api/${API_VERSION}/trades`, tradeRoutes);
+app.use(`/api/${API_VERSION}/reports`, reportRoutes);
 
 // Swagger documentation (will be added)
 if (process.env.NODE_ENV !== 'production') {

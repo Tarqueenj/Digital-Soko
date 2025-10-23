@@ -17,6 +17,7 @@ const {
   createProductValidation,
   updateProductValidation,
   validateObjectId,
+  validateSellerId,
   paginationValidation,
   validate,
 } = require('../middleware/validation');
@@ -24,7 +25,7 @@ const {
 // Public routes
 router.get('/', paginationValidation, validate, getProducts);
 router.get('/featured', getFeaturedProducts);
-router.get('/seller/:sellerId', validateObjectId, validate, getProductsBySeller);
+router.get('/seller/:sellerId', validateSellerId, validate, getProductsBySeller);
 router.get('/:id', validateObjectId, validate, getProduct);
 
 // Protected routes (Seller, Admin)

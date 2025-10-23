@@ -45,6 +45,16 @@ document.addEventListener("click", function(e) {
   }
 });
 
+// Check backend availability
+async function checkBackend() {
+  try {
+    const response = await fetch('http://localhost:5000/health');
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+}
+
 // Check if editing existing item
 const urlParams = new URLSearchParams(window.location.search);
 const editItemId = urlParams.get('edit');
@@ -54,40 +64,54 @@ let currentEditItem = null;
 // Load item data if editing
 if (editItemId) {
   isEditMode = true;
-  const myItems = JSON.parse(localStorage.getItem("myItems")) || [];
-  currentEditItem = myItems.find(item => item.id == editItemId);
+  loadItemForEdit(editItemId);
+}
+
+async function loadItemForEdit(itemId) {
+  try {
+    if (!window.productsAPI) return;
+    
+    const backendAvailable = await checkBackend();
+    if (!backendAvailable) return;
+    
+    const response = await productsAPI.getById(itemId);
+    currentEditItem = response.data;
   
-  if (currentEditItem) {
-    // Update page title
-    const pageTitle = document.querySelector("h1");
-    if (pageTitle) {
-      pageTitle.textContent = "Edit Item";
+    if (currentEditItem) {
+      // Update page title
+      const pageTitle = document.querySelector("h1");
+      if (pageTitle) {
+        pageTitle.textContent = "Edit Item";
+      }
+      
+      // Update button text
+      const submitBtn = document.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.textContent = "Update Item";
+      }
+      
+      // Pre-fill form with existing data
+      document.getElementById("itemName").value = currentEditItem.name;
+      document.getElementById("itemDesc").value = currentEditItem.description || "";
+      document.getElementById("itemCategory").value = currentEditItem.category;
+      document.getElementById("itemCondition").value = currentEditItem.condition;
+      document.getElementById("itemPrice").value = currentEditItem.price;
+      document.getElementById("itemTradeType").value = currentEditItem.tradeType;
+      
+      // Show existing image if available
+      const imageUrl = currentEditItem.images?.[0]?.url || currentEditItem.image;
+      if (imageUrl && imageUrl !== "https://via.placeholder.com/200?text=No+Image") {
+        document.getElementById("previewImg").src = imageUrl;
+        imagePreview.classList.remove("hidden");
+      }
     }
-    
-    // Update button text
-    const submitBtn = document.querySelector('button[type="submit"]');
-    if (submitBtn) {
-      submitBtn.textContent = "Update Item";
-    }
-    
-    // Pre-fill form with existing data
-    document.getElementById("itemName").value = currentEditItem.name;
-    document.getElementById("itemDesc").value = currentEditItem.description || "";
-    document.getElementById("itemCategory").value = currentEditItem.category;
-    document.getElementById("itemCondition").value = currentEditItem.condition;
-    document.getElementById("itemPrice").value = currentEditItem.price;
-    document.getElementById("itemTradeType").value = currentEditItem.tradeType;
-    
-    // Show existing image if available
-    if (currentEditItem.image && currentEditItem.image !== "https://via.placeholder.com/200?text=No+Image") {
-      document.getElementById("previewImg").src = currentEditItem.image;
-      imagePreview.classList.remove("hidden");
-    }
+  } catch (error) {
+    console.error('Error loading item for edit:', error);
   }
 }
 
 // Handle Post Item Form Submission
-document.getElementById("postItemForm").addEventListener("submit", function(e) {
+document.getElementById("postItemForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
   // Get form values
@@ -104,82 +128,150 @@ document.getElementById("postItemForm").addEventListener("submit", function(e) {
     return;
   }
 
-  // Handle image
-  let imageUrl = isEditMode && currentEditItem.image 
-    ? currentEditItem.image 
-    : "https://via.placeholder.com/200?text=No+Image";
+  // Get current user and token
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token') || user.token;
+  const userId = user._id || user.id || user.user?._id || user.user?.id;
   
-  if (itemImgInput.files && itemImgInput.files[0]) {
-    const reader = new FileReader();
-    
-    reader.onload = function(event) {
-      imageUrl = event.target.result;
-      saveItem(imageUrl);
-    };
-    
-    reader.readAsDataURL(itemImgInput.files[0]);
-  } else {
-    saveItem(imageUrl);
+  console.log('User:', user);
+  console.log('Token:', token);
+  console.log('User ID:', userId);
+  
+  if (!userId || !token) {
+    alert("Please login to post items. User ID or token missing.");
+    window.location.href = 'login.html';
+    return;
+  }
+  
+  // Ensure token is set in API client
+  if (window.api && token) {
+    api.setToken(token);
+    // Also store it in localStorage for future use
+    localStorage.setItem('token', token);
   }
 
-  function saveItem(image) {
-    // Get existing items from localStorage
-    const myItems = JSON.parse(localStorage.getItem("myItems")) || [];
+  // Disable submit button
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = isEditMode ? 'Updating...' : 'Posting...';
 
+  try {
+    // Get uploaded image file if any
+    const imageFile = itemImgInput.files && itemImgInput.files[0] ? itemImgInput.files[0] : null;
+    await saveItemToDatabase(itemName, itemDesc, itemCategory, itemCondition, itemPrice, itemTradeType, imageFile);
+  } catch (error) {
+    console.error('Error saving item:', error);
+    alert('Failed to save item: ' + error.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = isEditMode ? 'Update Item' : 'Post Item';
+  }
+
+});
+
+async function saveItemToDatabase(itemName, itemDesc, itemCategory, itemCondition, itemPrice, itemTradeType, imageFile) {
+  // Check backend availability
+  if (!window.productsAPI) {
+    throw new Error('API client not available');
+  }
+
+  const backendAvailable = await checkBackend();
+  if (!backendAvailable) {
+    throw new Error('Backend server is not running');
+  }
+
+  // Get category-specific default image
+  const categoryImages = {
+    'Electronics': 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=500',
+    'Clothing': 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=500',
+    'Books': 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=500',
+    'Home & Garden': 'https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=500',
+    'Sports': 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=500',
+    'Toys': 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=500',
+    'Beauty': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=500',
+    'Automotive': 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=500',
+    'Food': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500',
+    'Furniture': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=500',
+    'Other': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'
+  };
+
+  // Use category image or generic placeholder
+  const defaultImageUrl = categoryImages[itemCategory] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500';
+
+  try {
     if (isEditMode && currentEditItem) {
       // Update existing item
-      const itemIndex = myItems.findIndex(item => item.id == editItemId);
+      const productId = currentEditItem._id || currentEditItem.id;
       
-      if (itemIndex !== -1) {
-        myItems[itemIndex] = {
-          ...myItems[itemIndex],
+      if (imageFile) {
+        // Create FormData with image and other fields
+        const formData = new FormData();
+        formData.append('images', imageFile);
+        formData.append('name', itemName);
+        formData.append('description', itemDesc);
+        formData.append('category', itemCategory);
+        formData.append('condition', itemCondition);
+        formData.append('price', itemPrice);
+        formData.append('tradeType', itemTradeType);
+        formData.append('stock', 1);
+        
+        await productsAPI.updateWithImages(productId, formData);
+      } else {
+        // Update without image
+        const productData = {
           name: itemName,
           description: itemDesc,
           category: itemCategory,
           condition: itemCondition,
           price: itemPrice,
           tradeType: itemTradeType,
-          image: image,
-          dateUpdated: new Date().toISOString()
+          stock: 1
         };
-        
-        // Save to localStorage
-        localStorage.setItem("myItems", JSON.stringify(myItems));
-        
-        // Show success message
-        showSuccessModal("Item updated successfully!");
-        
-        // Clear edit mode
-        localStorage.removeItem("editItemId");
+        await productsAPI.update(productId, productData);
       }
+      
+      showSuccessModal("Item updated successfully in database!");
     } else {
       // Create new item
-      const newItem = {
-        id: Date.now(), // Simple unique ID
-        name: itemName,
-        description: itemDesc,
-        category: itemCategory,
-        condition: itemCondition,
-        price: itemPrice,
-        tradeType: itemTradeType,
-        image: image,
-        datePosted: new Date().toISOString()
-      };
-
-      // Add to items array
-      myItems.push(newItem);
-
-      // Save to localStorage
-      localStorage.setItem("myItems", JSON.stringify(myItems));
-
-      // Show success message
-      showSuccessModal("Item posted successfully!");
-
-      // Reset form
+      if (imageFile) {
+        // Create FormData with image and other fields
+        const formData = new FormData();
+        formData.append('images', imageFile);
+        formData.append('name', itemName);
+        formData.append('description', itemDesc);
+        formData.append('category', itemCategory);
+        formData.append('condition', itemCondition);
+        formData.append('price', itemPrice);
+        formData.append('tradeType', itemTradeType);
+        formData.append('stock', 1);
+        
+        await productsAPI.createWithImages(formData);
+      } else {
+        // Create without image, use default
+        const productData = {
+          name: itemName,
+          description: itemDesc,
+          category: itemCategory,
+          condition: itemCondition,
+          price: itemPrice,
+          tradeType: itemTradeType,
+          stock: 1,
+          images: [{
+            public_id: 'category_default_' + Date.now(),
+            url: defaultImageUrl
+          }]
+        };
+        await productsAPI.create(productData);
+      }
+      
+      showSuccessModal("Item posted successfully to database!");
       document.getElementById("postItemForm").reset();
+      imagePreview.classList.add("hidden");
     }
+  } catch (error) {
+    console.error('Error saving product:', error);
+    throw error;
   }
-});
+}
 
 // Success Modal Functions
 function showSuccessModal(message) {

@@ -138,7 +138,43 @@
     </div>
   </div>
 
-  <script src="marketplace.js"></script>
+  <!-- Flag Item Modal -->
+  <div id="flagModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-xl shadow-2xl w-11/12 md:w-1/2 max-w-lg">
+      <h2 class="text-2xl font-bold mb-4 text-gray-800">🚩 Report Item Pricing</h2>
+      
+      <div id="flagItemDetails" class="bg-gray-50 p-4 rounded-lg mb-4">
+        <p class="font-semibold text-lg" id="flagItemName"></p>
+        <p class="text-blue-600 font-bold" id="flagItemPrice"></p>
+      </div>
+
+      <div class="mb-4">
+        <label class="block font-semibold mb-2 text-gray-700">Report Reason</label>
+        <select id="flagReason" class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none">
+          <option value="">-- Select Reason --</option>
+          <option value="overpriced">💰 Overpriced - Price too high for this item</option>
+          <option value="underpriced">📉 Underpriced - Suspiciously low price</option>
+          <option value="misleading">⚠️ Misleading - Description doesn't match price</option>
+          <option value="other">❓ Other pricing concern</option>
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <label class="block font-semibold mb-2 text-gray-700">Additional Details (Optional)</label>
+        <textarea id="flagComment" rows="3" class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none" placeholder="Provide more details about the pricing issue..."></textarea>
+      </div>
+
+      <div class="flex justify-between items-center">
+        <button onclick="closeFlagModal()" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Cancel</button>
+        <button onclick="submitFlag()" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold">
+          🚩 Submit Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="marketplace.js?v=2"></script>
   <script>
     // Navbar dropdown toggle
     document.addEventListener("DOMContentLoaded", () => {

@@ -197,6 +197,13 @@ exports.validateObjectId = [
 ];
 
 /**
+ * MongoDB ObjectId validation for sellerId
+ */
+exports.validateSellerId = [
+  param('sellerId').isMongoId().withMessage('Invalid seller ID format'),
+];
+
+/**
  * Pagination validation
  */
 exports.paginationValidation = [
