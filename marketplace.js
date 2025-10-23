@@ -102,9 +102,14 @@ function renderItems(items) {
       <p class="text-sm text-gray-500">Condition: ${itemCondition}</p>
       <p class="text-sm text-gray-500">Category: ${itemCategory}</p>
       <p class="text-xs text-blue-600 mt-1">${itemTradeType}</p>
-      <button onclick="openModal('${itemId}')" class="mt-3 w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-        🔄 Trade Now
-      </button>
+      <div class="mt-3 flex gap-2">
+        <button onclick="openModal('${itemId}')" class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+          🔄 Trade
+        </button>
+        <button onclick="openFlagModal('${itemId}')" class="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="Report pricing issue">
+          🚩
+        </button>
+      </div>
     `;
     itemsGrid.appendChild(card);
   });
@@ -190,11 +195,11 @@ function openModal(itemId) {
 
 function closeModal() {
   tradeModal.classList.add("hidden");
-  // Reset comparison
-  document.getElementById("priceComparison").classList.add("hidden");
-  userItemPreview.classList.add("hidden");
+  selectedMarketItem = null;
   selectedUserItem = null;
   isFullTopup = false;
+  userItemPreview.classList.add("hidden");
+  document.getElementById("priceComparison").classList.add("hidden");
 }
 
 // Show item comparison when user selects their item
@@ -299,6 +304,94 @@ function confirmTrade() {
 
   alert("Trade request sent!");
   closeModal();
+}
+
+// Flag Modal Functions
+let flaggedItem = null;
+
+function openFlagModal(itemId) {
+  flaggedItem = allItems.find(item => (item._id || item.id).toString() === itemId.toString());
+  
+  if (!flaggedItem) {
+    alert("Item not found!");
+    return;
+  }
+
+  // Populate flag modal with item details
+  const itemPrice = flaggedItem.price || 0;
+  document.getElementById("flagItemName").textContent = flaggedItem.name;
+  document.getElementById("flagItemPrice").textContent = `Ksh ${itemPrice.toLocaleString()}`;
+  
+  // Reset form
+  document.getElementById("flagReason").value = "";
+  document.getElementById("flagComment").value = "";
+  
+  // Show modal
+  document.getElementById("flagModal").classList.remove("hidden");
+}
+
+function closeFlagModal() {
+  document.getElementById("flagModal").classList.add("hidden");
+  flaggedItem = null;
+}
+
+async function submitFlag() {
+  const reason = document.getElementById("flagReason").value;
+  const comment = document.getElementById("flagComment").value;
+  
+  if (!reason) {
+    alert("Please select a reason for reporting this item.");
+    return;
+  }
+  
+  if (!flaggedItem) {
+    alert("No item selected.");
+    return;
+  }
+  
+  try {
+    // Get current user
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user._id || user.id || user.user?._id || user.user?.id;
+    
+    if (!userId) {
+      alert("Please log in to report items.");
+      window.location.href = 'login.html';
+      return;
+    }
+    
+    // Prepare flag data
+    const flagData = {
+      productId: flaggedItem._id || flaggedItem.id,
+      reason: reason,
+      comment: comment,
+      reportedBy: userId,
+      productName: flaggedItem.name,
+      productPrice: flaggedItem.price
+    };
+    
+    // Check if backend is available
+    const backendAvailable = await checkBackend();
+    if (backendAvailable && window.api) {
+      // Send to backend
+      await api.post('/reports', flagData);
+      alert("✅ Thank you for your report! Our team will review this item.");
+    } else {
+      // Store locally as fallback
+      const reports = JSON.parse(localStorage.getItem('itemReports') || '[]');
+      reports.push({
+        ...flagData,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem('itemReports', JSON.stringify(reports));
+      alert("✅ Report saved! It will be submitted when the backend is available.");
+    }
+    
+    closeFlagModal();
+  } catch (error) {
+    console.error('Error submitting flag:', error);
+    alert("Failed to submit report. Please try again.");
+  }
 }
 
 // Event listeners

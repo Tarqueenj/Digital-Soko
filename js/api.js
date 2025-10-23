@@ -130,6 +130,19 @@ const authAPI = {
   changePassword: (data) => api.put('/auth/change-password', data),
 };
 
+// Reports API
+const reportsAPI = {
+  create: (reportData) => api.post('/reports', reportData),
+  getAll: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/reports${queryString ? '?' + queryString : ''}`);
+  },
+  getById: (id) => api.get(`/reports/${id}`),
+  updateStatus: (id, statusData) => api.put(`/reports/${id}/status`, statusData),
+  delete: (id) => api.delete(`/reports/${id}`),
+  getStats: () => api.get('/reports/stats/overview'),
+};
+
 // Products API
 const productsAPI = {
   getAll: (params = {}) => {
@@ -196,6 +209,7 @@ window.api = api;
 window.authAPI = authAPI;
 window.productsAPI = productsAPI;
 window.tradesAPI = tradesAPI;
+window.reportsAPI = reportsAPI;
 window.cartAPI = cartAPI;
 window.ordersAPI = ordersAPI;
 window.wishlistAPI = wishlistAPI;
