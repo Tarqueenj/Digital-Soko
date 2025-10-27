@@ -135,8 +135,9 @@
     </div>
   </div>
 
+  <script src="js/api.js"></script>
   <script>
-    document.getElementById('signupForm').addEventListener('submit', function(e) {
+    document.getElementById('signupForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
       const fullName = document.getElementById('fullName').value;
@@ -145,6 +146,7 @@
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirmPassword').value;
       const terms = document.getElementById('terms').checked;
+      const submitBtn = e.target.querySelector('button[type="submit"]');
       
       // Validation
       if (!terms) {
@@ -162,20 +164,50 @@
         return;
       }
 
-      // Store user data (in production, this would be sent to a server)
-      const userData = {
-        fullName: fullName,
-        email: email,
-        phone: phone,
-        createdAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem('userData', JSON.stringify(userData));
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('username', fullName);
-      
-      // Show success modal
-      document.getElementById('successModal').classList.remove('hidden');
+      // Split full name into first and last name
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Disable button and show loading
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating Account...';
+
+      try {
+        // Call backend API to register user
+        const response = await authAPI.register({
+          firstName,
+          lastName,
+          email,
+          password,
+          phone,
+          role: 'customer' // Default role
+        });
+
+        console.log('Registration response:', response);
+
+        // Extract token and user data
+        const token = response.token || response.data?.token;
+        const userData = response.data?.user || response.data;
+
+        // Store token and user info
+        if (token) {
+          api.setToken(token);
+          localStorage.setItem('token', token);
+        }
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('username', userData.firstName);
+
+        // Show success modal
+        document.getElementById('successModal').classList.remove('hidden');
+
+      } catch (error) {
+        console.error('Registration error:', error);
+        alert('Registration failed: ' + (error.message || 'Please try again.'));
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Account';
+      }
     });
 
     function goToDashboard() {

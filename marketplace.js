@@ -86,6 +86,11 @@ function renderItems(items) {
     
     // Handle both backend and localStorage formats
     const imageUrl = item.images?.[0]?.url || item.image || 'https://via.placeholder.com/200';
+    // Fix image URL for local uploads - ensure it points to backend server
+    const fixedImageUrl = imageUrl.startsWith('http://localhost:5000') ? imageUrl : 
+                         imageUrl.startsWith('/uploads/') ? `http://localhost:5000${imageUrl}` :
+                         imageUrl.includes('uploads/') ? `http://localhost:5000/${imageUrl}` :
+                         imageUrl;
     const itemId = item._id || item.id;
     const itemPrice = item.price || 0;
     const itemCondition = item.condition || 'N/A';
@@ -93,7 +98,7 @@ function renderItems(items) {
     const itemTradeType = item.tradeType || 'FullAmount';
     
     card.innerHTML = `
-      <img src="${imageUrl}" 
+      <img src="${fixedImageUrl}" 
            alt="${item.name}" 
            class="w-full h-40 object-cover rounded-md mb-3"
            onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
@@ -153,10 +158,15 @@ function openModal(itemId) {
 
   // Populate modal with selected item
   const imageUrl = selectedMarketItem.images?.[0]?.url || selectedMarketItem.image || 'https://via.placeholder.com/200';
+  // Fix image URL for local uploads - ensure it points to backend server
+  const fixedModalImageUrl = imageUrl.startsWith('http://localhost:5000') ? imageUrl : 
+                             imageUrl.startsWith('/uploads/') ? `http://localhost:5000${imageUrl}` :
+                             imageUrl.includes('uploads/') ? `http://localhost:5000/${imageUrl}` :
+                             imageUrl;
   const itemPrice = selectedMarketItem.price || 0;
   const itemCondition = selectedMarketItem.condition || 'N/A';
   
-  modalItemImg.src = imageUrl;
+  modalItemImg.src = fixedModalImageUrl;
   modalItemName.textContent = selectedMarketItem.name;
   modalItemPrice.textContent = `Ksh ${itemPrice.toLocaleString()}`;
   modalItemCondition.textContent = `Condition: ${itemCondition}`;
@@ -220,8 +230,13 @@ function showItemComparison() {
   if (selectedUserItem) {
     // Show user item preview
     const itemImage = selectedUserItem.images?.[0]?.url || selectedUserItem.image || 'https://via.placeholder.com/200';
+    // Fix image URL for local uploads - ensure it points to backend server
+    const fixedUserImageUrl = itemImage.startsWith('http://localhost:5000') ? itemImage : 
+                              itemImage.startsWith('/uploads/') ? `http://localhost:5000${itemImage}` :
+                              itemImage.includes('uploads/') ? `http://localhost:5000/${itemImage}` :
+                              itemImage;
     const itemPrice = selectedUserItem.price || 0;
-    userItemImg.src = itemImage;
+    userItemImg.src = fixedUserImageUrl;
     userItemName.textContent = selectedUserItem.name;
     userItemPrice.textContent = `Ksh ${itemPrice.toLocaleString()}`;
     userItemPreview.classList.remove("hidden");
