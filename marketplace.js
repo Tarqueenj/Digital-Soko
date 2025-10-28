@@ -46,10 +46,37 @@ async function loadItems() {
     if (useBackend && window.productsAPI) {
       const backendAvailable = await checkBackend();
       if (backendAvailable) {
+        console.log('Loading items from backend...');
         const response = await productsAPI.getAll();
+        console.log('Backend response:', response);
+        
         // Handle nested products array in response
-        allItems = response.data?.products || response.data || [];
-        myItems = [...allItems];
+        allItems = response.data?.products || response.data || response.products || response || [];
+        console.log('All items loaded:', allItems);
+        
+        // Load user's own items separately
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const userId = user._id || user.id || user.user?._id || user.user?.id;
+          
+          if (userId) {
+            // Filter items by current user
+            myItems = allItems.filter(item => 
+              (item.seller === userId) || 
+              (item.seller?._id === userId) ||
+              (item.seller?.id === userId) ||
+              (item.userId === userId) ||
+              (item.user === userId)
+            );
+            console.log('My items filtered:', myItems);
+          } else {
+            myItems = [...allItems]; // Fallback to all items if no user ID
+          }
+        } catch (userError) {
+          console.error('Error getting user info:', userError);
+          myItems = [...allItems];
+        }
+        
         renderItems(allItems);
         return;
       }
@@ -59,8 +86,10 @@ async function loadItems() {
   }
   
   // Fallback to localStorage
+  console.log('Loading from localStorage...');
   allItems = JSON.parse(localStorage.getItem("myItems")) || [];
   myItems = [...allItems];
+  console.log('Items from localStorage:', allItems);
   renderItems(allItems);
 }
 
