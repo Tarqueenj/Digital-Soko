@@ -5,10 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sign Up - Digital Soko</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/background-styles.css">
 </head>
-<body class="bg-gradient-to-br from-blue-500 to-purple-600 min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4">
+  <!-- Animated Background -->
+  <div class="soko-background blurred">
+    <div class="floating-elements"></div>
+  </div>
   
-  <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+  <div class="auth-container rounded-2xl p-8 w-full max-w-md content-overlay">
     <div class="text-center mb-8">
       <h1 class="text-4xl font-bold text-gray-800 mb-2">Digital Soko</h1>
       <p class="text-gray-600">Create your account to start trading</p>
@@ -135,8 +140,9 @@
     </div>
   </div>
 
+  <script src="js/api.js"></script>
   <script>
-    document.getElementById('signupForm').addEventListener('submit', function(e) {
+    document.getElementById('signupForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
       const fullName = document.getElementById('fullName').value;
@@ -145,6 +151,7 @@
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirmPassword').value;
       const terms = document.getElementById('terms').checked;
+      const submitBtn = e.target.querySelector('button[type="submit"]');
       
       // Validation
       if (!terms) {
@@ -162,20 +169,59 @@
         return;
       }
 
-      // Store user data (in production, this would be sent to a server)
-      const userData = {
-        fullName: fullName,
-        email: email,
-        phone: phone,
-        createdAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem('userData', JSON.stringify(userData));
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('username', fullName);
-      
-      // Show success modal
-      document.getElementById('successModal').classList.remove('hidden');
+      // Split full name into first and last name
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Disable button and show loading
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating Account...';
+
+      try {
+        // Call backend API to register user
+        const response = await authAPI.register({
+          firstName,
+          lastName,
+          email,
+          password,
+          phone,
+          role: 'customer' // Default role
+        });
+
+        console.log('Registration response:', response);
+
+        // Extract token and user data
+        const token = response.token || response.data?.token;
+        const userData = response.data?.user || response.data;
+
+        // Store token and user info
+        if (token) {
+          api.setToken(token);
+          localStorage.setItem('token', token);
+        }
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('username', userData.firstName);
+
+        // Clear background and show success modal
+        const background = document.querySelector('.soko-background');
+        if (background) {
+          background.classList.remove('blurred');
+          background.classList.add('clear');
+        }
+        
+        // Add a brief delay to show the background clearing effect
+        setTimeout(() => {
+          document.getElementById('successModal').classList.remove('hidden');
+        }, 800);
+
+      } catch (error) {
+        console.error('Registration error:', error);
+        alert('Registration failed: ' + (error.message || 'Please try again.'));
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Account';
+      }
     });
 
     function goToDashboard() {

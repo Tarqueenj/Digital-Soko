@@ -46,10 +46,37 @@ async function loadItems() {
     if (useBackend && window.productsAPI) {
       const backendAvailable = await checkBackend();
       if (backendAvailable) {
+        console.log('Loading items from backend...');
         const response = await productsAPI.getAll();
+        console.log('Backend response:', response);
+        
         // Handle nested products array in response
-        allItems = response.data?.products || response.data || [];
-        myItems = [...allItems];
+        allItems = response.data?.products || response.data || response.products || response || [];
+        console.log('All items loaded:', allItems);
+        
+        // Load user's own items separately
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const userId = user._id || user.id || user.user?._id || user.user?.id;
+          
+          if (userId) {
+            // Filter items by current user
+            myItems = allItems.filter(item => 
+              (item.seller === userId) || 
+              (item.seller?._id === userId) ||
+              (item.seller?.id === userId) ||
+              (item.userId === userId) ||
+              (item.user === userId)
+            );
+            console.log('My items filtered:', myItems);
+          } else {
+            myItems = [...allItems]; // Fallback to all items if no user ID
+          }
+        } catch (userError) {
+          console.error('Error getting user info:', userError);
+          myItems = [...allItems];
+        }
+        
         renderItems(allItems);
         return;
       }
@@ -59,8 +86,10 @@ async function loadItems() {
   }
   
   // Fallback to localStorage
+  console.log('Loading from localStorage...');
   allItems = JSON.parse(localStorage.getItem("myItems")) || [];
   myItems = [...allItems];
+  console.log('Items from localStorage:', allItems);
   renderItems(allItems);
 }
 
@@ -86,6 +115,11 @@ function renderItems(items) {
     
     // Handle both backend and localStorage formats
     const imageUrl = item.images?.[0]?.url || item.image || 'https://via.placeholder.com/200';
+    // Fix image URL for local uploads - ensure it points to backend server
+    const fixedImageUrl = imageUrl.startsWith('http://localhost:5000') ? imageUrl : 
+                         imageUrl.startsWith('/uploads/') ? `http://localhost:5000${imageUrl}` :
+                         imageUrl.includes('uploads/') ? `http://localhost:5000/${imageUrl}` :
+                         imageUrl;
     const itemId = item._id || item.id;
     const itemPrice = item.price || 0;
     const itemCondition = item.condition || 'N/A';
@@ -93,7 +127,7 @@ function renderItems(items) {
     const itemTradeType = item.tradeType || 'FullAmount';
     
     card.innerHTML = `
-      <img src="${imageUrl}" 
+      <img src="${fixedImageUrl}" 
            alt="${item.name}" 
            class="w-full h-40 object-cover rounded-md mb-3"
            onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
@@ -153,10 +187,15 @@ function openModal(itemId) {
 
   // Populate modal with selected item
   const imageUrl = selectedMarketItem.images?.[0]?.url || selectedMarketItem.image || 'https://via.placeholder.com/200';
+  // Fix image URL for local uploads - ensure it points to backend server
+  const fixedModalImageUrl = imageUrl.startsWith('http://localhost:5000') ? imageUrl : 
+                             imageUrl.startsWith('/uploads/') ? `http://localhost:5000${imageUrl}` :
+                             imageUrl.includes('uploads/') ? `http://localhost:5000/${imageUrl}` :
+                             imageUrl;
   const itemPrice = selectedMarketItem.price || 0;
   const itemCondition = selectedMarketItem.condition || 'N/A';
   
-  modalItemImg.src = imageUrl;
+  modalItemImg.src = fixedModalImageUrl;
   modalItemName.textContent = selectedMarketItem.name;
   modalItemPrice.textContent = `Ksh ${itemPrice.toLocaleString()}`;
   modalItemCondition.textContent = `Condition: ${itemCondition}`;
@@ -220,8 +259,13 @@ function showItemComparison() {
   if (selectedUserItem) {
     // Show user item preview
     const itemImage = selectedUserItem.images?.[0]?.url || selectedUserItem.image || 'https://via.placeholder.com/200';
+    // Fix image URL for local uploads - ensure it points to backend server
+    const fixedUserImageUrl = itemImage.startsWith('http://localhost:5000') ? itemImage : 
+                              itemImage.startsWith('/uploads/') ? `http://localhost:5000${itemImage}` :
+                              itemImage.includes('uploads/') ? `http://localhost:5000/${itemImage}` :
+                              itemImage;
     const itemPrice = selectedUserItem.price || 0;
-    userItemImg.src = itemImage;
+    userItemImg.src = fixedUserImageUrl;
     userItemName.textContent = selectedUserItem.name;
     userItemPrice.textContent = `Ksh ${itemPrice.toLocaleString()}`;
     userItemPreview.classList.remove("hidden");

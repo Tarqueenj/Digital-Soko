@@ -58,23 +58,35 @@ exports.register = asyncHandler(async (req, res, next) => {
 exports.login = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 
+  console.log('Login attempt:', { email, password: password ? '[PROVIDED]' : '[MISSING]' });
+
   // Find user and include password
   const user = await User.findOne({ email }).select('+password');
 
+  console.log('User found:', user ? `${user.email} (${user.role})` : 'NO USER FOUND');
+
   if (!user) {
+    console.log('LOGIN FAILED: User not found');
     return next(new AppError('Invalid credentials', 401));
   }
 
   // Check if user is active
   if (!user.isActive) {
+    console.log('LOGIN FAILED: User inactive');
     return next(new AppError('Your account has been deactivated', 403));
   }
 
   // Verify password
+  console.log('Testing password...');
   const isPasswordMatch = await user.comparePassword(password);
+  console.log('Password match result:', isPasswordMatch);
+  
   if (!isPasswordMatch) {
+    console.log('LOGIN FAILED: Password mismatch');
     return next(new AppError('Invalid credentials', 401));
   }
+
+  console.log('LOGIN SUCCESS: Generating token...');
 
   // Generate token
   const token = user.generateAuthToken();

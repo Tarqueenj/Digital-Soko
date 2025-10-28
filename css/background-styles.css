@@ -1,0 +1,129 @@
+/* Digital Soko Background Styles */
+
+/* Base background for all pages */
+.soko-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  /* Use actual background image */
+  background-image: url('https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  /* Add subtle overlay for better text readability */
+  background-blend-mode: overlay;
+  background-color: rgba(102, 126, 234, 0.3);
+}
+
+/* Remove gradient animation since we're using actual image */
+
+/* Subtle overlay for better contrast with actual image */
+.soko-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+/* Remove pattern overlay since we're using actual image */
+
+/* Blurred state for login/signup pages */
+.soko-background.blurred {
+  filter: blur(8px);
+  transform: scale(1.1);
+  transition: filter 0.8s ease, transform 0.8s ease;
+}
+
+/* Clear state for authenticated pages */
+.soko-background.clear {
+  filter: blur(0px);
+  transform: scale(1);
+  transition: filter 0.8s ease, transform 0.8s ease;
+}
+
+/* Content overlay to ensure readability */
+.content-overlay {
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(0px);
+  transition: backdrop-filter 0.3s ease;
+}
+
+/* Enhanced form container for login/signup */
+.auth-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+}
+
+/* Dashboard container with clear background */
+.dashboard-container {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(0px);
+}
+
+/* Floating elements animation */
+.floating-elements {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.floating-elements::before,
+.floating-elements::after {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  animation: float 20s infinite linear;
+}
+
+.floating-elements::before {
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
+}
+
+.floating-elements::after {
+  bottom: -100px;
+  right: -100px;
+  animation-delay: -10s;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-100px) rotate(180deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(360deg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .soko-background.blurred {
+    filter: blur(6px);
+  }
+  
+  .floating-elements::before,
+  .floating-elements::after {
+    width: 150px;
+    height: 150px;
+  }
+}

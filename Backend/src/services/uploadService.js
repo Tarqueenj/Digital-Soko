@@ -1,31 +1,29 @@
 const fs = require('fs').promises;
-const { uploadImage, deleteImage } = require('../config/cloudinary');
+const path = require('path');
 const { AppError } = require('../utils/errorHandler');
 const logger = require('../utils/logger');
 
 /**
- * Upload single image to Cloudinary
+ * Upload single image to local storage
  * @param {Object} file - Multer file object
- * @param {string} folder - Cloudinary folder name
- * @returns {Promise<Object>} Upload result with public_id and url
+ * @param {string} folder - Local folder name (unused for local storage)
+ * @returns {Promise<Object>} Upload result with filename and url
  */
-exports.uploadSingleImage = async (file, folder = 'ecommerce') => {
+exports.uploadSingleImage = async (file, folder = 'products') => {
   try {
     if (!file) {
       throw new AppError('No file provided', 400);
     }
 
-    // Upload to Cloudinary
-    const result = await uploadImage(file.path, folder);
-
-    // Delete local file after upload
-    await fs.unlink(file.path).catch((err) => {
-      logger.warn(`Failed to delete local file: ${err.message}`);
-    });
-
+    // File is already saved by multer, just return the info
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+    const filename = path.basename(file.path);
+    
     return {
-      public_id: result.public_id,
-      url: result.secure_url,
+      public_id: filename, // Use filename as public_id for consistency
+      url: `${baseUrl}/uploads/${filename}`,
+      filename: filename,
+      path: file.path
     };
   } catch (error) {
     // Clean up local file on error
@@ -37,32 +35,29 @@ exports.uploadSingleImage = async (file, folder = 'ecommerce') => {
 };
 
 /**
- * Upload multiple images to Cloudinary
+ * Upload multiple images to local storage
  * @param {Array} files - Array of multer file objects
- * @param {string} folder - Cloudinary folder name
+ * @param {string} folder - Local folder name (unused for local storage)
  * @returns {Promise<Array>} Array of upload results
  */
-exports.uploadMultipleImages = async (files, folder = 'ecommerce') => {
+exports.uploadMultipleImages = async (files, folder = 'products') => {
   try {
     if (!files || files.length === 0) {
       throw new AppError('No files provided', 400);
     }
 
-    const uploadPromises = files.map(async (file) => {
-      const result = await uploadImage(file.path, folder);
-      
-      // Delete local file after upload
-      await fs.unlink(file.path).catch((err) => {
-        logger.warn(`Failed to delete local file: ${err.message}`);
-      });
-
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+    
+    const results = files.map((file) => {
+      const filename = path.basename(file.path);
       return {
-        public_id: result.public_id,
-        url: result.secure_url,
+        public_id: filename, // Use filename as public_id for consistency
+        url: `${baseUrl}/uploads/${filename}`,
+        filename: filename,
+        path: file.path
       };
     });
 
-    const results = await Promise.all(uploadPromises);
     return results;
   } catch (error) {
     // Clean up local files on error
@@ -76,8 +71,8 @@ exports.uploadMultipleImages = async (files, folder = 'ecommerce') => {
 };
 
 /**
- * Delete image from Cloudinary
- * @param {string} publicId - Cloudinary public ID
+ * Delete image from local storage
+ * @param {string} publicId - Filename or public ID
  * @returns {Promise<Object>} Delete result
  */
 exports.deleteSingleImage = async (publicId) => {
@@ -86,16 +81,29 @@ exports.deleteSingleImage = async (publicId) => {
       throw new AppError('No public ID provided', 400);
     }
 
-    const result = await deleteImage(publicId);
-    return result;
+    const uploadPath = process.env.UPLOAD_PATH || './uploads';
+    const filePath = path.join(uploadPath, publicId);
+    
+    // Check if file exists before trying to delete
+    try {
+      await fs.access(filePath);
+      await fs.unlink(filePath);
+      return { result: 'ok', public_id: publicId };
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        logger.warn(`File not found for deletion: ${publicId}`);
+        return { result: 'not found', public_id: publicId };
+      }
+      throw err;
+    }
   } catch (error) {
     throw new AppError(`Image deletion failed: ${error.message}`, 400);
   }
 };
 
 /**
- * Delete multiple images from Cloudinary
- * @param {Array} publicIds - Array of Cloudinary public IDs
+ * Delete multiple images from local storage
+ * @param {Array} publicIds - Array of filenames or public IDs
  * @returns {Promise<Array>} Array of delete results
  */
 exports.deleteMultipleImages = async (publicIds) => {
@@ -104,7 +112,13 @@ exports.deleteMultipleImages = async (publicIds) => {
       return [];
     }
 
-    const deletePromises = publicIds.map((publicId) => deleteImage(publicId));
+    const deletePromises = publicIds.map((publicId) => 
+      this.deleteSingleImage(publicId).catch((error) => {
+        logger.error(`Failed to delete image ${publicId}: ${error.message}`);
+        return { result: 'error', public_id: publicId, error: error.message };
+      })
+    );
+    
     const results = await Promise.all(deletePromises);
     return results;
   } catch (error) {

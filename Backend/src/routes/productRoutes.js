@@ -32,7 +32,7 @@ router.get('/:id', validateObjectId, validate, getProduct);
 router.use(protect);
 router.post(
   '/',
-  authorize('seller', 'admin'),
+  authorize('customer', 'seller', 'admin'),
   createLimiter,
   upload.array('images', 5),
   handleMulterError,
@@ -43,7 +43,7 @@ router.post(
 
 router.put(
   '/:id',
-  authorize('seller', 'admin'),
+  authorize('customer', 'seller', 'admin'),
   validateObjectId,
   upload.array('images', 5),
   handleMulterError,
@@ -54,7 +54,7 @@ router.put(
 
 router.delete(
   '/:id',
-  authorize('seller', 'admin'),
+  authorize('customer', 'seller', 'admin'),
   validateObjectId,
   validate,
   deleteProduct

@@ -6,8 +6,14 @@
   <title>Digital Soko — Post Item</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="js/api.js?v=4"></script>
+  <script src="js/price-checker.js"></script>
+  <link rel="stylesheet" href="css/background-styles.css">
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="min-h-screen">
+  <!-- Clear Background for authenticated pages -->
+  <div class="soko-background clear">
+    <div class="floating-elements"></div>
+  </div>
   <!-- Navbar -->
   <header class="bg-blue-700 text-white">
     <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
@@ -32,7 +38,7 @@
   </header>
 
   <!-- Main -->
-  <main class="max-w-7xl mx-auto px-6 py-8">
+  <main class="max-w-7xl mx-auto px-6 py-8 content-overlay">
       <h1 class="text-3xl font-bold text-gray-800 mb-6">Post New Item</h1>
 
       <form id="postItemForm" class="bg-white p-6 rounded-lg shadow-md space-y-4 max-w-2xl">
@@ -55,6 +61,7 @@
             <option value="Furniture">Furniture</option>
             <option value="Books">Books</option>
             <option value="Sports">Sports</option>
+            <option value="Any">Any</option>
           </select>
         </div>
 
@@ -66,12 +73,19 @@
             <option value="Like New">Like New</option>
             <option value="Used">Used</option>
             <option value="Fair">Fair</option>
+            <option value="Any">Any</option>
           </select>
         </div>
 
         <div>
           <label class="block font-semibold mb-1">Price (Ksh)</label>
-          <input type="number" id="itemPrice" required min="0" class="w-full border px-3 py-2 rounded"/>
+          <div class="flex gap-2">
+            <input type="number" id="itemPrice" required min="0" class="flex-1 border px-3 py-2 rounded"/>
+            <button type="button" id="checkPriceBtn" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm whitespace-nowrap">
+              🤖 Check Price
+            </button>
+          </div>
+          <div id="priceAnalysis" class="hidden mt-2 p-3 rounded-lg border"></div>
         </div>
 
         <div>
@@ -81,6 +95,7 @@
             <option value="FullAmount">Full Amount</option>
             <option value="TopUp">Top-up</option>
             <option value="Barter">Barter Only</option>
+            <option value="Any">Any</option>
           </select>
         </div>
 
@@ -127,6 +142,103 @@
           dropdown.classList.add("hidden");
         }
       });
+
+      // Price checking functionality
+      const checkPriceBtn = document.getElementById("checkPriceBtn");
+      const priceAnalysisDiv = document.getElementById("priceAnalysis");
+
+      checkPriceBtn.addEventListener("click", async () => {
+        const itemName = document.getElementById("itemName").value;
+        const itemCategory = document.getElementById("itemCategory").value;
+        const itemCondition = document.getElementById("itemCondition").value;
+        const itemPrice = parseFloat(document.getElementById("itemPrice").value);
+        const itemDesc = document.getElementById("itemDesc").value;
+
+        // Validate required fields
+        if (!itemName || !itemCategory || !itemCondition || !itemPrice) {
+          alert("Please fill in item name, category, condition, and price before checking.");
+          return;
+        }
+
+        // Show loading state
+        checkPriceBtn.disabled = true;
+        checkPriceBtn.innerHTML = '⏳ Checking...';
+        priceAnalysisDiv.classList.add("hidden");
+
+        try {
+          const item = {
+            name: itemName,
+            category: itemCategory,
+            condition: itemCondition,
+            price: itemPrice,
+            description: itemDesc
+          };
+
+          const analysis = await window.priceChecker.checkPrice(item);
+          displayPriceAnalysis(analysis);
+        } catch (error) {
+          console.error('Price check error:', error);
+          displayPriceAnalysis({
+            status: 'error',
+            message: 'Unable to check price. Please ensure you have a valid Gemini API key configured.'
+          });
+        } finally {
+          checkPriceBtn.disabled = false;
+          checkPriceBtn.innerHTML = '🤖 Check Price';
+        }
+      });
+
+      function displayPriceAnalysis(analysis) {
+        const priceAnalysisDiv = document.getElementById("priceAnalysis");
+        
+        if (analysis.status === 'error') {
+          priceAnalysisDiv.className = "mt-2 p-3 rounded-lg border border-red-200 bg-red-50";
+          priceAnalysisDiv.innerHTML = `
+            <div class="text-red-800">
+              <strong>❌ Error:</strong> ${analysis.message}
+            </div>
+          `;
+        } else {
+          const bgColor = {
+            'fair': 'bg-green-50 border-green-200',
+            'overpriced': 'bg-red-50 border-red-200',
+            'underpriced': 'bg-blue-50 border-blue-200'
+          }[analysis.assessment] || 'bg-gray-50 border-gray-200';
+
+          const textColor = {
+            'fair': 'text-green-800',
+            'overpriced': 'text-red-800', 
+            'underpriced': 'text-blue-800'
+          }[analysis.assessment] || 'text-gray-800';
+
+          const icon = {
+            'fair': '✅',
+            'overpriced': '📈',
+            'underpriced': '📉'
+          }[analysis.assessment] || '🤔';
+
+          const confidence = '⭐'.repeat(Math.floor(analysis.confidence / 2));
+
+          priceAnalysisDiv.className = `mt-2 p-3 rounded-lg border ${bgColor}`;
+          priceAnalysisDiv.innerHTML = `
+            <div class="${textColor}">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-lg">${icon}</span>
+                <strong>${analysis.assessment.charAt(0).toUpperCase() + analysis.assessment.slice(1)} Price</strong>
+                <span class="text-sm">${confidence} (${analysis.confidence}/10)</span>
+              </div>
+              <p class="mb-2">${analysis.message}</p>
+              <div class="text-sm space-y-1">
+                <div><strong>Market Range:</strong> KSH ${analysis.marketRange.min.toLocaleString()} - ${analysis.marketRange.max.toLocaleString()}</div>
+                <div><strong>Suggested:</strong> KSH ${analysis.suggestedRange.min.toLocaleString()} - ${analysis.suggestedRange.max.toLocaleString()}</div>
+                <div><strong>Reasoning:</strong> ${analysis.reasoning}</div>
+              </div>
+            </div>
+          `;
+        }
+        
+        priceAnalysisDiv.classList.remove("hidden");
+      }
     });
   </script>
 </body>

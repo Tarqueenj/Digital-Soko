@@ -16,7 +16,7 @@ exports.apiLimiter = rateLimit({
  */
 exports.authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per windowMs
+  max: 50, // Increased from 5 to 50 for development
   message: 'Too many login attempts, please try again after 15 minutes',
   skipSuccessfulRequests: true,
 });
