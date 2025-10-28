@@ -5,10 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login - Digital Soko</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/background-styles.css">
 </head>
-<body class="bg-gradient-to-br from-blue-500 to-purple-600 min-h-screen flex items-center justify-center">
+<body class="min-h-screen flex items-center justify-center">
+  <!-- Animated Background -->
+  <div class="soko-background blurred">
+    <div class="floating-elements"></div>
+  </div>
   
-  <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+  <div class="auth-container rounded-2xl p-8 w-full max-w-md content-overlay">
     <div class="text-center mb-8">
       <h1 class="text-4xl font-bold text-gray-800 mb-2">Digital Soko</h1>
       <p class="text-gray-600">Welcome back! Please login to continue</p>
@@ -114,15 +119,25 @@
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('username', userData.firstName);
         
-        // Show success message
-        alert(`Welcome back, ${response.data.firstName}!`);
-        
-        // Redirect based on role
-        if (response.data.role === 'admin') {
-          window.location.href = 'admin-dashboard.html';
-        } else {
-          window.location.href = 'dashboard.html';
+        // Show success message and clear background
+        const background = document.querySelector('.soko-background');
+        if (background) {
+          background.classList.remove('blurred');
+          background.classList.add('clear');
         }
+        
+        // Add a brief delay to show the background clearing effect
+        setTimeout(() => {
+          alert(`Welcome back, ${response.data.firstName}!`);
+          
+          // Redirect based on role
+          if (response.data.role === 'admin') {
+            window.location.href = 'admin-dashboard.html';
+          } else {
+            window.location.href = 'dashboard.html';
+          }
+        }, 800);
+        
       } catch (error) {
         console.error('Login error:', error);
         alert('Login failed: ' + (error.message || 'Invalid credentials. Please try again.'));

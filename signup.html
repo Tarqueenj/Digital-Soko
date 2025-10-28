@@ -5,10 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sign Up - Digital Soko</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/background-styles.css">
 </head>
-<body class="bg-gradient-to-br from-blue-500 to-purple-600 min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4">
+  <!-- Animated Background -->
+  <div class="soko-background blurred">
+    <div class="floating-elements"></div>
+  </div>
   
-  <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+  <div class="auth-container rounded-2xl p-8 w-full max-w-md content-overlay">
     <div class="text-center mb-8">
       <h1 class="text-4xl font-bold text-gray-800 mb-2">Digital Soko</h1>
       <p class="text-gray-600">Create your account to start trading</p>
@@ -199,8 +204,17 @@
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('username', userData.firstName);
 
-        // Show success modal
-        document.getElementById('successModal').classList.remove('hidden');
+        // Clear background and show success modal
+        const background = document.querySelector('.soko-background');
+        if (background) {
+          background.classList.remove('blurred');
+          background.classList.add('clear');
+        }
+        
+        // Add a brief delay to show the background clearing effect
+        setTimeout(() => {
+          document.getElementById('successModal').classList.remove('hidden');
+        }, 800);
 
       } catch (error) {
         console.error('Registration error:', error);
